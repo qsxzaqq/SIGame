@@ -1,0 +1,6 @@
+name: SIGame
+version: 1.0-SNAPSHOT
+main: cc.i9mc.sigame.SIGame
+depend: [GameUtils, K8SGameACK, LangUtils]
+commands:
+  world:
