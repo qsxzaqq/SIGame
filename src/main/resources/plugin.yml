@@ -1,6 +1,6 @@
 name: SIGame
 version: ${project.version}
 main: cc.i9mc.sigame.SIGame
-depend: [GameUtils, K8SGameACK, LangUtils]
+depend: [GameUtils, K8SGameACK, LangUtils, Vault, PlayerPoints]
 commands:
   world:

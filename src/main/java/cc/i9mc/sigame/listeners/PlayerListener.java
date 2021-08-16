@@ -2,14 +2,9 @@ package cc.i9mc.sigame.listeners;
 
 import cc.i9mc.gameutils.utils.ItemSerializerUtil;
 import cc.i9mc.sigame.SIGame;
-import cc.i9mc.sigame.data.SIData;
-import cc.i9mc.sigame.data.SIGameDeny;
-import cc.i9mc.sigame.data.SIGameJoin;
-import cc.i9mc.sigame.data.SIType;
-import com.google.gson.Gson;
+import cc.i9mc.sigame.data.*;
+import cc.i9mc.sigame.utils.BorderUtil;
 import com.meowj.langutils.lang.LanguageHelper;
-import com.meowj.langutils.locale.LocaleHelper;
-import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -24,7 +19,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
@@ -48,30 +42,34 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onLogin(PlayerLoginEvent event) {
         Player player = event.getPlayer();
-        SIGameJoin siGameJoin = SIGame.getInstance().getPlayerManager().getData(player.getUniqueId());
-        if (siGameJoin == null) {
-            event.disallow(PlayerLoginEvent.Result.KICK_FULL, SIGameDeny.DATA_NULL.getMessage());
+        GameJoin gameJoin = SIGame.getInstance().getPlayerManager().get(player.getUniqueId());
+        if (gameJoin == null) {
+            event.disallow(PlayerLoginEvent.Result.KICK_FULL, GameJoin.JoinResult.DATA_NULL.getMessage());
             return;
         }
 
-        SIData siData = SIData.DATA.getOrDefault(siGameJoin.getUuid(), null);
-        SIGameDeny siGameDeny = SIGame.getInstance().getPlayerManager().playerLogin(player, siGameJoin, siData);
-        if (siGameDeny == SIGameDeny.ALLOW) {
-            event.allow();
+        SIData siData = SIData.get(gameJoin.getPlayer());
+        if (siData == null) {
+            event.disallow(PlayerLoginEvent.Result.KICK_FULL, GameJoin.JoinResult.DATA_NULL.getMessage());
             return;
         }
 
-        event.disallow(PlayerLoginEvent.Result.KICK_FULL, siGameDeny.getMessage());
+        event.allow();
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        SIGameJoin siGameJoin = SIGame.getInstance().getPlayerManager().getData(player.getUniqueId());
-        SIData siData = SIData.DATA.get(siGameJoin.getUuid());
-
         event.setJoinMessage(null);
-        SIGame.getInstance().getPlayerManager().playerJoin(player, siGameJoin, siData);
+
+        Player player = event.getPlayer();
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return;
+        }
+
+        SIGame.getInstance().getPlayerManager().playerJoin(player, siData);
+
+        GamePlayer.load(player);
 
         noDamagePlayers.add(player);
         new BukkitRunnable() {
@@ -85,6 +83,8 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         event.setQuitMessage(null);
+
+        GamePlayer.DATA.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
@@ -100,9 +100,12 @@ public class PlayerListener implements Listener {
         event.setKeepInventory(true);
 
         Player player = event.getEntity();
-        UUID uuid = UUID.fromString(player.getWorld().getName().replace("_nether", ""));
-        SIData siData = SIData.getSIData(uuid);
         EntityDamageEvent.DamageCause damageCause = event.getEntity().getLastDamageCause().getCause();
+
+        SIData siData = SIData.getByWorld(player.getWorld());
+        if (siData == null) {
+            return;
+        }
 
         switch (damageCause) {
             case ENTITY_ATTACK:
@@ -167,10 +170,20 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
-        UUID uuid = UUID.fromString(player.getWorld().getName().replace("_nether", ""));
-        SIData siData = SIData.getSIData(uuid);
+        SIData siData = SIData.getByWorld(player.getWorld());
+
+        if (siData == null) {
+            return;
+        }
 
         event.setRespawnLocation(siData.getSpawn().toLocation(player.getWorld()));
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                BorderUtil.sendBorder(player, siData.getBorderColor(), siData.getSize());
+            }
+        }.runTaskLater(SIGame.getInstance(), 5L);
 
         noDamagePlayers.add(player);
         new BukkitRunnable() {
@@ -184,8 +197,11 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onDamageByEntity(EntityDamageByEntityEvent event) {
         if (event.getDamager() instanceof Player && event.getEntity() instanceof Player) {
-            UUID uuid = UUID.fromString(event.getEntity().getWorld().getName().replace("_nether", ""));
-            SIData siData = SIData.getSIData(uuid);
+            SIData siData = SIData.getByWorld(event.getEntity().getWorld());
+
+            if (siData == null) {
+                return;
+            }
 
             if (!siData.isPvp()) {
                 event.setCancelled(true);
@@ -195,11 +211,14 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
-        UUID uuid = UUID.fromString(event.getPlayer().getWorld().getName().replace("_nether", ""));
         Player player = event.getPlayer();
-        SIData siData = SIData.getSIData(uuid);
+        SIData siData = SIData.getByWorld(player.getWorld());
 
-        if (siData.getType() != SIType.WATER) {
+        if (siData == null) {
+            return;
+        }
+
+        if (siData.getType() != SIData.GameType.WATER) {
             return;
         }
 

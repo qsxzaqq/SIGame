@@ -3,9 +3,7 @@ package cc.i9mc.sigame.listeners;
 import cc.i9mc.gameutils.GameUtilsAPI;
 import cc.i9mc.gameutils.event.bukkit.BukkitPubSubMessageEvent;
 import cc.i9mc.sigame.SIGame;
-import cc.i9mc.sigame.data.MemberRequest;
-import cc.i9mc.sigame.data.MemberResult;
-import cc.i9mc.sigame.data.SIGameJoin;
+import cc.i9mc.sigame.data.*;
 import cc.i9mc.sigame.event.MemberAcceptEvent;
 import cc.i9mc.sigame.event.MemberDenyEvent;
 import com.google.gson.Gson;
@@ -23,13 +21,21 @@ public class MessageListener implements Listener {
     @EventHandler
     public void onSub(BukkitPubSubMessageEvent event) {
         switch (event.getChannel()) {
+            case "SI.Game.Update":
+                GameUpdate gameUpdate = GSON.fromJson(event.getMessage(), GameUpdate.class);
+                Database.executorService.execute(() -> {
+                    if (!gameUpdate.getServer().equals(GameUtilsAPI.getServerName()) && SIData.DATA.containsKey(gameUpdate.getId())) {
+                        SIData.DATA.get(gameUpdate.getId()).update();
+                    }
+                });
+                break;
             case "SI.Game.Join":
-                SIGameJoin siGameJoin = GSON.fromJson(event.getMessage(), SIGameJoin.class);
-                if (!siGameJoin.getServer().equals(GameUtilsAPI.getServerName())) {
+                GameJoin gameJoin = GSON.fromJson(event.getMessage(), GameJoin.class);
+                if (!gameJoin.getServer().equals(GameUtilsAPI.getServerName())) {
                     return;
                 }
 
-                SIGame.getInstance().getPlayerManager().addData(siGameJoin);
+                SIGame.getInstance().getPlayerManager().load(gameJoin);
                 break;
             case "SI.Game.MemberRequest":
                 MemberRequest memberRequest = GSON.fromJson(event.getMessage(), MemberRequest.class);

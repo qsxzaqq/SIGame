@@ -9,8 +9,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
-import java.util.Collection;
-
 /**
  * Created by JinVan on 2021-01-14.
  */

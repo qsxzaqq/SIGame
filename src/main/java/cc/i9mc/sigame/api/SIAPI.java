@@ -1,17 +1,9 @@
 package cc.i9mc.sigame.api;
 
-import cc.i9mc.gameutils.utils.JedisUtil;
-import cc.i9mc.sigame.SIGame;
-import cc.i9mc.sigame.data.Database;
-import cc.i9mc.sigame.data.MemberRequest;
 import cc.i9mc.sigame.data.SIData;
 import com.google.gson.Gson;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
-
-import java.util.Date;
-import java.util.UUID;
 
 /**
  * Created by JinVan on 2021-01-13.
@@ -19,36 +11,196 @@ import java.util.UUID;
 public class SIAPI {
     private static final Gson GSON = new Gson();
 
- /*   public static String getBorderColor(String uuid) {
-      return SIData.getSIData(UUID.fromString(uuid)).getBorder().getBorderColor().toString();
+    public static boolean inIsland(Player player) {
+        SIData siData = SIData.getByWorld(player.getWorld());
+        SIData playerData = SIData.get(player.getUniqueId());
+
+        return siData != null && siData.equals(playerData);
     }
 
-    public static void setBorderColor(String uuid, String color) {
-        SIData siData = SIData.getSIData(UUID.fromString(uuid));
-        siData.getBorder().setBorderColor(Border.BorderColor.valueOf(color));
+    public static boolean isOwner(Player player) {
+        if (!inIsland(player)) {
+            return false;
+        }
 
-        siData.saveBorder();
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return false;
+        }
+
+        return siData.getOwner().getUuid().equals(player.getUniqueId());
     }
 
-    public static double getBorderSize(String uuid) {
-        return SIData.getSIData(UUID.fromString(uuid)).getBorder().getSize();
+    public static SIData.Player.PlayerType getPlayerType(Player player) {
+        if (!inIsland(player)) {
+            return null;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return null;
+        }
+
+        return siData.getPlayer(player.getUniqueId()).getPlayerType();
     }
 
-    public static void setBorderSize(String uuid, double size) {
-        SIData siData = SIData.getSIData(UUID.fromString(uuid));
-        siData.getBorder().setSize(size);
+    public static boolean isPVP(Player player) {
+        if (!inIsland(player)) {
+            return false;
+        }
 
-        siData.saveBorder();
-    }
-*/
-    public static String getBiome(String uuid) {
-        return SIData.getSIData(UUID.fromString(uuid)).getBiome().toString();
-    }
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return false;
+        }
 
-    public static void setBiome(String uuid, String biome) {
-        SIData.getSIData(UUID.fromString(uuid)).updateBiome(Biome.valueOf(biome));
+        return siData.isPvp();
     }
 
+    public static void setPVP(Player player, boolean pvp) {
+        if (!inIsland(player)) {
+            return;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return;
+        }
+
+        siData.updatePVP(pvp);
+    }
+
+    public static String getBorderColor(Player player) {
+        if (!inIsland(player)) {
+            return null;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return null;
+        }
+
+        return siData.getBorderColor().toString();
+    }
+
+    public static void setBorderColor(Player player, String borderColor) {
+        if (!inIsland(player)) {
+            return;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return;
+        }
+
+        siData.updateBorderColor(SIData.BorderColor.valueOf(borderColor));
+    }
+
+    public static boolean isOpen(Player player) {
+        if (!inIsland(player)) {
+            return false;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return false;
+        }
+
+        return siData.isOpen();
+    }
+
+    public static void setOpen(Player player, boolean pvp) {
+        if (!inIsland(player)) {
+            return;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return;
+        }
+
+        siData.updateOpen(pvp);
+    }
+
+    public static SIData.GameBiome getBiome(Player player) {
+        if (!inIsland(player)) {
+            return null;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return null;
+        }
+
+
+        return SIData.GameBiome.getByBiome(siData.getBiome());
+    }
+
+    public static void setBiome(Player player, String biome) {
+        if (!inIsland(player)) {
+            return;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return;
+        }
+
+        siData.updateBiome(Biome.valueOf(biome));
+    }
+
+    public static void setSpawn(Player player, org.bukkit.Location location) {
+        if (!inIsland(player)) {
+            return;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return;
+        }
+
+        siData.updateSpawn(location);
+    }
+
+    public static void setWarp(Player player, org.bukkit.Location location) {
+        if (!inIsland(player)) {
+            return;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return;
+        }
+
+        siData.updateWarp(location);
+    }
+
+    public static SIData.Player[] getMembers(Player player) {
+        if (!inIsland(player)) {
+            return null;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return null;
+        }
+
+        return siData.getMembers().toArray(new SIData.Player[0]);
+    }
+
+    public static SIData.Player[] getTrusts(Player player) {
+        if (!inIsland(player)) {
+            return null;
+        }
+
+        SIData siData = SIData.get(player.getUniqueId());
+        if (siData == null) {
+            return null;
+        }
+
+        return siData.getTrusts().toArray(new SIData.Player[0]);
+    }
+/*
     public static void requestMember(Player player, String target) {
         if (!SIData.DATA.containsKey(player.getUniqueId()) || !Database.hasData(player.getUniqueId())) {
             player.sendMessage("§c请先创建岛屿");
@@ -94,16 +246,5 @@ public class SIAPI {
         Database.addTrust(player.getUniqueId(), player1);
     }
 
-    public void setSpawn(Player player, org.bukkit.Location location) {
-        if (!SIData.DATA.containsKey(player.getUniqueId()) || !Database.hasData(player.getUniqueId())) {
-            player.sendMessage("§c请先创建岛屿");
-        }
-
-        if (!player.getWorld().getName().startsWith(player.getUniqueId().toString())) {
-            return;
-        }
-    }
-
-    public void updateWarp(org.bukkit.Location location) {
-    }
+*/
 }

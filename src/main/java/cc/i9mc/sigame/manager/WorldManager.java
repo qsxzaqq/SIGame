@@ -1,6 +1,6 @@
 package cc.i9mc.sigame.manager;
 
-import cc.i9mc.sigame.data.SIType;
+import cc.i9mc.sigame.data.SIData;
 import cc.i9mc.sigame.generator.GameGenerator;
 import cc.i9mc.sigame.generator.SkyChunkGenerator;
 import cc.i9mc.sigame.generator.WaterChunkGenerator;
@@ -12,18 +12,17 @@ import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 
 import java.io.File;
-import java.util.UUID;
 
 /**
  * Created by JinVan on 2021-01-12.
  */
 public class WorldManager {
     private final MinecraftServer minecraftServer = MinecraftServer.getServer();
-    private final File dataFile = new File("/worlds/");
+    private final File dataFile = new File("/island/");
 
-    public void loadPlayer(UUID uuid, SIType siType, EnumDifficulty enumDifficulty) {
-        loadWorld(uuid.toString(), uuid.toString(), World.Environment.NORMAL, getGenerator(siType), enumDifficulty);
-        loadWorld(uuid.toString(), uuid.toString() + "_nether", World.Environment.NETHER, getGenerator(siType), enumDifficulty);
+    public void loadPlayer(SIData siData) {
+        loadWorld(siData.getId().toString(), siData.getId().toString(), World.Environment.NORMAL, getGenerator(siData.getType()), EnumDifficulty.HARD);
+        loadWorld(siData.getId().toString(), siData.getId().toString() + "_nether", World.Environment.NETHER, getGenerator(siData.getType()), EnumDifficulty.HARD);
     }
 
     public void loadWorld(String fileName, String name, World.Environment environment, GameGenerator gameGenerator, EnumDifficulty enumDifficulty) {
@@ -42,9 +41,9 @@ public class WorldManager {
         Bukkit.getPluginManager().callEvent(new WorldLoadEvent(worldServer.getWorld()));
     }
 
-    public void unloadWorld(UUID uuid) {
-        Bukkit.unloadWorld(uuid.toString(), true);
-        Bukkit.unloadWorld(uuid.toString() + "_nether", true);
+    public void unloadWorld(SIData siData) {
+        Bukkit.unloadWorld(siData.getId().toString(), true);
+        Bukkit.unloadWorld(siData.getId().toString() + "_nether", true);
     }
 
     private int getDimension() {
@@ -59,27 +58,27 @@ public class WorldManager {
                     break;
                 }
             }
-        } while(used);
+        } while (used);
 
         return dimension;
     }
 
     private File getDataFile(World.Environment environment) {
-        if(environment == World.Environment.NORMAL) {
+        if (environment == World.Environment.NORMAL) {
             return new File(dataFile, "world");
         } else if (environment == World.Environment.NETHER) {
             return new File(dataFile, "nether");
-        }else {
+        } else {
             return null;
         }
     }
 
-    private GameGenerator getGenerator(SIType siType) {
-        if (siType == SIType.SKY) {
+    private GameGenerator getGenerator(SIData.GameType gameType) {
+        if (gameType == SIData.GameType.SKY) {
             return new SkyChunkGenerator();
-        } else if (siType == SIType.WATER) {
+        } else if (gameType == SIData.GameType.WATER) {
             return new WaterChunkGenerator();
-        }else {
+        } else {
             return null;
         }
     }

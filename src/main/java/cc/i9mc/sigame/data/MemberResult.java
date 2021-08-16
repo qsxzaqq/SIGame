@@ -16,6 +16,6 @@ public class MemberResult {
     private MemberResultType memberResultType;
 
     public enum MemberResultType {
-        ACCEPT, DENY;
+        ACCEPT, DENY
     }
 }

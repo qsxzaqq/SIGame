@@ -1,6 +1,6 @@
 package cc.i9mc.sigame.utils;
 
-import cc.i9mc.sigame.data.BorderColor;
+import cc.i9mc.sigame.data.SIData;
 import net.minecraft.server.v1_12_R1.EntityPlayer;
 import net.minecraft.server.v1_12_R1.PacketPlayOutWorldBorder;
 import net.minecraft.server.v1_12_R1.WorldBorder;
@@ -13,21 +13,14 @@ import org.bukkit.entity.Player;
  */
 public class BorderUtil {
 
-/*    @SneakyThrows
-    public static void clearBorder(Player player, Border border) {
-        Border rawBorder = border.clone();
-        rawBorder.setSize(1.4999992E7D);
-        sendBorder(player, rawBorder);
-    }*/
-
-    public static void sendBorder(Player player, BorderColor borderColor, int size) {
+    public static void sendBorder(Player player, SIData.BorderColor borderColor, int size) {
         WorldBorder worldBorder = new WorldBorder();
         worldBorder.setCenter(0, 0);
         worldBorder.setSize(size);
         worldBorder.setWarningDistance(0);
 
         EntityPlayer entityPlayer = ((CraftPlayer) player).getHandle();
-        worldBorder.world = (WorldServer)entityPlayer.world;
+        worldBorder.world = (WorldServer) entityPlayer.world;
 
         switch (borderColor) {
             case BLUE:

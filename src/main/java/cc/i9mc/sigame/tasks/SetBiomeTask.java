@@ -16,9 +16,9 @@ public class SetBiomeTask implements Runnable {
 
     @Override
     public void run() {
-        for (int x = (int) -siData.getSize(); x < siData.getSize(); x++) {
-            for (int z = (int) -siData.getSize(); z < siData.getSize(); z++) {
-                Bukkit.getWorld(siData.getUuid()).setBiome(x, z, siData.getBiome());
+        for (int x = -siData.getSize(); x < siData.getSize(); x++) {
+            for (int z = -siData.getSize(); z < siData.getSize(); z++) {
+                siData.getWorld().setBiome(x, z, siData.getBiome());
             }
         }
     }
